@@ -2,7 +2,7 @@ import time
 import config
 import pyautogui
 
-from ..config import COMMANDS
+from config import COMMANDS
 
 # Example usage
 # parser = CommandParser()

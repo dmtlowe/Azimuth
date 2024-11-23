@@ -5,7 +5,8 @@ from bleak import BleakScanner
 from pymyo import Myo
 from pymyo.types import EmgMode, EmgValue, SleepMode
 
-from scripts.classifier import Classifier
+from classifier import Classifier
+from command_parser import CommandParser
 from config import (
     MYO_ADDRESS,
     MODEL_PATH,
@@ -13,17 +14,18 @@ from config import (
 )
 
 class EMGProcessor:
-    def __init__(self, classifier: Classifier, window_size: int = 20):
+    def __init__(self, classifier: Classifier, parser: CommandParser, window_size: int = 80):
         """
         Initialize EMG processor with a classifier and window size.
         window_size: Number of samples to keep in buffer (assuming 200Hz sampling rate,
                     20 samples = 0.1s of data)
         """
         self.classifier = classifier
+        self.parser = parser
         self.window_size = window_size
         self.emg_buffer: Deque[Tuple[EmgValue, EmgValue]] = deque(maxlen=window_size)
         self.last_prediction_time = 0
-        self.prediction_interval = 0.5  # seconds
+        self.prediction_interval = 0.05  # seconds
 
     def add_sample(self, emg_data: Tuple[EmgValue, EmgValue]) -> None:
         """Add a new EMG sample to the buffer"""
@@ -48,6 +50,7 @@ class EMGProcessor:
         print(f"EMG Data (mV) - Sensors 9-16: {[f'{mv:.5f}' for mv in latest_data[1]]}")
         print(f"Predicted class: {predicted_class}")
 
+        self.parser.store_class(predicted_class, current_time)
         self.last_prediction_time = current_time
         return predicted_class
 
@@ -57,8 +60,11 @@ async def main() -> None:
     if not myo_device:
         raise RuntimeError(f"Could not find Myo device with address {MYO_ADDRESS}")
 
+    # Initialize parser
+    parser = CommandParser()
+
     # Initialize EMG processor
-    emg_processor = EMGProcessor(classifier)
+    emg_processor = EMGProcessor(classifier, parser)
     start_time = asyncio.get_event_loop().time()
 
     async with Myo(myo_device) as myo:
