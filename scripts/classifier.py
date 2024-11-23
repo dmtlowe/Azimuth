@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import pickle
 
+from scipy.special import softmax
 from pymyo.types import EmgValue
 from tensorflow.keras.models import load_model
 from ..config import CLASSES
@@ -26,4 +27,4 @@ class Classifier:
         
         print(f"Probabilities: {prediction}")
         
-        return CLASSES[predicted_class]
+        return CLASSES[predicted_class], prediction
