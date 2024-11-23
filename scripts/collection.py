@@ -6,7 +6,7 @@ from bleak import BleakScanner
 from pathlib import Path
 from pymyo import Myo
 from pymyo.types import EmgMode, EmgValue, UnsupportedFeatureError, SleepMode
-from config import (
+from ..config import (
     CLASSES,
     MYO_ADDRESS
 )
