@@ -13,12 +13,26 @@ from ..config import COMMANDS
 class CommandParser:
     def __init__(self):
         self.detected_classes = []
+        self.last_class = None
+        self.last_class_count = 0
 
     def store_class(self, detected_class: int, timestamp: float):
         # Function (1): Store a detected class and execute process_command()
         if 0 <= detected_class <= 10:
-            self.detected_classes.append({'class': detected_class, 'timestamp': timestamp})
-            self.process_command()
+            if detected_class != self.last_class:
+                # Reset count if a new class is detected
+                self.last_class = detected_class
+                self.last_class_count = 1
+            else:
+                # Increment count for repeated classes
+                self.last_class_count += 1
+
+            if self.last_class_count >= 10:
+                if not self.detected_classes or (timestamp - self.detected_classes[-1]['timestamp'] <= 1.2):
+                    # Add the detected class if it is different and within 1.2 seconds of the last non-zero class
+                    if not self.detected_classes or self.detected_classes[-1]['class'] != detected_class:
+                        self.detected_classes.append({'class': detected_class, 'timestamp': timestamp})
+                    self.process_command()
 
     def process_command(self):
         # Function (2): Process the detected classes and execute the command
