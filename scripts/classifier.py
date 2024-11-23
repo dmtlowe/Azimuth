@@ -4,7 +4,7 @@ import pickle
 
 from pymyo.types import EmgValue
 from tensorflow.keras.models import load_model
-from config import CLASSES
+from ..config import CLASSES
 
 class Classifier:
     def __init__(self, model_path: str, metadata_path: str):

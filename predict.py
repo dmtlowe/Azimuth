@@ -5,7 +5,7 @@ from bleak import BleakScanner
 from pymyo import Myo
 from pymyo.types import EmgMode, EmgValue, SleepMode
 
-from classifier import Classifier
+from scripts.classifier import Classifier
 from config import (
     MYO_ADDRESS,
     MODEL_PATH,
