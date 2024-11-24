@@ -5,16 +5,19 @@ from bleak import BleakScanner
 from pymyo import Myo
 from pymyo.types import EmgMode, EmgValue, SleepMode
 
+import numpy as np
+
 from classifier import Classifier
 from command_parser import CommandParser
 from config import (
     MYO_ADDRESS,
     MODEL_PATH,
-    METADATA_PATH
+    METADATA_PATH,
+    COMMANDS
 )
 
 class EMGProcessor:
-    def __init__(self, classifier: Classifier, parser: CommandParser, window_size: int = 80):
+    def __init__(self, classifier: Classifier, parser: CommandParser, window_size: int = 60):
         """
         Initialize EMG processor with a classifier and window size.
         window_size: Number of samples to keep in buffer (assuming 200Hz sampling rate,
@@ -25,7 +28,7 @@ class EMGProcessor:
         self.window_size = window_size
         self.emg_buffer: Deque[Tuple[EmgValue, EmgValue]] = deque(maxlen=window_size)
         self.last_prediction_time = 0
-        self.prediction_interval = 0.05  # seconds
+        self.prediction_interval = 0.005 # seconds
 
     def add_sample(self, emg_data: Tuple[EmgValue, EmgValue]) -> None:
         """Add a new EMG sample to the buffer"""
@@ -35,22 +38,29 @@ class EMGProcessor:
         """Check if enough time has passed for a new prediction"""
         return (current_time - self.last_prediction_time) >= self.prediction_interval
 
-    def make_prediction(self, current_time: float) -> str:
+    async def make_prediction(self, current_time: float, myo) -> str:
         """Make a prediction using the current buffer of EMG data"""
         if len(self.emg_buffer) < self.window_size:
             return "Insufficient data"
 
         # Use the most recent sample for prediction
-        latest_data = self.emg_buffer[-1]
-        predicted_class = self.classifier.classify(latest_data)
-        
-        # Print the EMG data and prediction
-        print(f"\nTime: {current_time:.1f}s")
-        print(f"EMG Data (mV) - Sensors 1-8: {[f'{mv:.5f}' for mv in latest_data[0]]}")
-        print(f"EMG Data (mV) - Sensors 9-16: {[f'{mv:.5f}' for mv in latest_data[1]]}")
-        print(f"Predicted class: {predicted_class}")
+        latest_data = self.emg_buffer
+        latest_data = np.sqrt(np.mean(np.square(latest_data), axis=0))
 
-        self.parser.store_class(predicted_class, current_time)
+        predicted_class, prediction = self.classifier.classify(latest_data)
+        
+        success, command_name = self.parser.store_class(predicted_class, current_time)
+        # if success:
+        #     # command_id = command_list.index(command_name)
+        #     # vibe = command_id*100
+        #     myo.vibrate2((100, 200), (100, 255))
+
+        # Print the EMG data and prediction
+        # print(f"\nTime: {current_time:.1f}s")
+        # print(f"EMG Data (mV) - Sensors 1-8: {[f'{mv:.5f}' for mv in latest_data[0]]}")
+        # print(f"EMG Data (mV) - Sensors 9-16: {[f'{mv:.5f}' for mv in latest_data[1]]}")
+        #print(f"Predicted class: {predicted_class}")
+
         self.last_prediction_time = current_time
         return predicted_class
 
@@ -59,9 +69,6 @@ async def main() -> None:
     myo_device = await BleakScanner.find_device_by_address(MYO_ADDRESS)
     if not myo_device:
         raise RuntimeError(f"Could not find Myo device with address {MYO_ADDRESS}")
-
-    # Initialize parser
-    parser = CommandParser()
 
     # Initialize EMG processor
     emg_processor = EMGProcessor(classifier, parser)
@@ -90,13 +97,15 @@ async def main() -> None:
                 
                 # Check if it's time to make a prediction
                 if emg_processor.should_predict(current_time):
-                    emg_processor.make_prediction(current_time)
+                    await emg_processor.make_prediction(current_time, myo)
                 
-                await asyncio.sleep(0.01)  # Small sleep to prevent CPU overuse
+                await asyncio.sleep(0.005)  # Small sleep to prevent CPU overuse
                 
         except KeyboardInterrupt:
             print("\nStopping data collection...")
 
 if __name__ == "__main__":
     classifier = Classifier(MODEL_PATH, METADATA_PATH)
+    parser = CommandParser()
+    command_list = [COMMANDS.keys()]
     asyncio.run(main())

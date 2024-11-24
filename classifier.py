@@ -22,9 +22,9 @@ class Classifier:
         emg_features_scaled = self.scaler.transform(emg_features_df)
         emg_features_reshaped = emg_features_scaled.reshape(1, -1)
 
-        prediction = self.model.predict(emg_features_reshaped)
+        prediction = self.model.predict(emg_features_reshaped, verbose=False)
         predicted_class = np.argmax(prediction)
         
-        print(f"Probabilities: {prediction}")
+        #print(f"Probabilities: {prediction}")
         
-        return CLASSES[predicted_class], prediction
+        return predicted_class, CLASSES[predicted_class]
