@@ -13,7 +13,9 @@ from config import (
     MYO_ADDRESS,
     MODEL_PATH,
     METADATA_PATH,
-    COMMANDS
+    COMMANDS,
+    WINDOW_SIZE,
+    PCA_VARIANCE
 )
 
 class EMGProcessor:
@@ -71,7 +73,7 @@ async def main() -> None:
         raise RuntimeError(f"Could not find Myo device with address {MYO_ADDRESS}")
 
     # Initialize EMG processor
-    emg_processor = EMGProcessor(classifier, parser)
+    emg_processor = EMGProcessor(classifier, parser, WINDOW_SIZE)
     start_time = asyncio.get_event_loop().time()
 
     async with Myo(myo_device) as myo:

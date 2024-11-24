@@ -1,11 +1,11 @@
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 from glob import glob
 from tqdm import tqdm
 
 # Define the data folder
-data_folder = 'data'  # Change this to your data folder path
+data_folder = 'backup_data'  # Change this to your data folder path
 
 # Get all CSV files in the data folder
 path = os.path.join(data_folder, '*.csv')
@@ -35,7 +35,7 @@ def add_gaussian_noise(signal, std_dev):
     return augmented_signal.astype(np.int8)
 
 # Levels of Gaussian noise to add (standard deviations)
-noise_levels = [2]  # You can adjust these values as needed
+noise_levels = [2.5]  # You can adjust these values as needed
 
 # Initialize a list to store augmented data
 augmented_data = []
