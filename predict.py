@@ -99,4 +99,5 @@ async def main() -> None:
 
 if __name__ == "__main__":
     classifier = Classifier(MODEL_PATH, METADATA_PATH)
+    parser = CommandParser()
     asyncio.run(main())
